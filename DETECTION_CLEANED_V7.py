@@ -1,29 +1,29 @@
-import os
-import time
+#Code written by Victor LETZELTER
+#Feel free to contact be for any requests
 
-start_time = time.time()
+#This file corresponds to the algorithm for the events detection given the times series of the two probes.
+#The results of this algorithm will, then, feed a neural network for the detection of the "Zonal Flows" events related to the data
+#of a single probe.
 
-print("Current Working Directory " , os.getcwd())
-os.chdir("/Users/victorletzelter/Desktop/Projet_python")
+import os #Execution for the python scripts related to the algorithm.
+os.chdir("/Users/victorletzelter/Documents/GitHub") #This line may have to be adapted
 
 exec(open('imports_gestion.py').read())
-exec(open('Coherence_gestion.py').read())
+exec(open('R_Coherence_gestion.py').read())
 exec(open('LRC_gestion.py').read())
-exec(open('Non_coverage.py').read())
-exec(open('Exp_gestion_3.py').read())
-
-#exec(open('Synthese.py').read())
-
-os.chdir('/Users/victorletzelter/Desktop/Dat')
+exec(open('R_Non_coverage.py').read())
+exec(open('R_Exp_gestion.py').read())
 
 data1=pd.read_csv("/Users/victorletzelter/Desktop/Dat/converted_data1.txt",delimiter=' ')
 data2=pd.read_csv("/Users/victorletzelter/Desktop/Dat/converted_data2.txt",delimiter=' ')
+
+#One can execute the three next lines for a first visualisation of the data 
 
 #plt.plot(data1['Potential(V)'])
 #plt.plot(data2['Potential(V)'])
 #plt.show()
 
-def split(dat,x1,x2) :
+def split(dat,x1,x2) : #This function allows to split the data and to work with a specific part of it : the indexes between x1 and x2.
     l=len(dat)
     dat1=dat.tail(l-int(x1))
     dat1=dat1.head(int(x2-x1))
@@ -33,7 +33,7 @@ x1=450000
 x2=500000
 
 X1=450000
-X2=500000 #bounds used for the training
+X2=500000 #bounds used for the "training part" whose usefulness is to adjust hyperparameters of the detection algorithm 
 
 D=split(data1,x1,x2)
 D2=split(data2,x1,x2)
@@ -41,15 +41,13 @@ D2=split(data2,x1,x2)
 D=round(D,2) #To improve calculation time
 D2=round(D2,2)
 
-plt.plot(data1['Potential(V)'])
-plt.plot(data2['Potential(V)'])
-plt.show()
+#plt.plot(data1['Potential(V)'])
+#plt.plot(data2['Potential(V)'])
+#plt.show()
 #plt.close()
 
-os.chdir("/Users/victorletzelter/Desktop/Projet_python")
 exec(open('RMS_gestion_2.py').read())
 exec(open('/Users/victorletzelter/Desktop/Projet_python/NEW_METHOD_C_OK2.py').read())
-
 
 ### Smoothing the Signal, then Removing the offset by Savitzky-Golay method
 
@@ -59,9 +57,13 @@ D2=Da[1]
 
 ### Loading of the training part
 
-exec(open("/Users/victorletzelter/Desktop/Projet_python/sampleziNEW4.txt").read()) #Getting the zi variable
+exec(open("/Users/victorletzelter/Desktop/Projet_python/samplezi.txt").read()) #Getting the zi variable
 
 ###Optimal values for the next step :
+
+#DP and GP refer to "Dumping part" and "Growing part" respectively
+#Min and max refer to "Dumping part" and "Growing part" respectively
+#These lists will contain the indexes (point number) related to the beginning and the end of the pattern detected given the data of two probes. 
 
 GP2_min=[]
 DP2_min=[]
@@ -72,13 +74,16 @@ GP2_max=[]
 DP2_max=[]
 GP_max=[]
 DP_max=[]
-Rate_keep=80
+
+Rate_keep=80 #This variable provides quantifies the quality of the ZF intervals that are desired. It gives the proportion of the training
+#examples which are desired to be detected on the same interval (between X1 and X2). With high values of the Rate_keep, but the precision
+#of the algorithm will dicrease. On the contrary, low values of the Rate_keep will provide more selective but more precise results.
 
 traitement(zi) #Intervals in the variables GP2_min,DP2_min,GP_min,DP_min,GP2_max,DP2_max,GP_max,DP_max
 
 ###Optimal values for N, F and S
 
-###GENERAL CODE !!!!(Values chosen for the moment N=4, F=100 and S=100)
+###GENERAL CODE !!!!(Values chosen : N=4, F=100 and S=100)
 
 ###Value of the thresold factor for the coherence
 
@@ -644,34 +649,6 @@ print("--- %s seconds ---" % (time.time() - start_time))
 
 
 
-
-
-
-#Confusion matrix ?
-
-l=[]
-
-for e in F_Int_min :
-
-
-
-
-
-
-
-
-
-plt.show()
-
-print("--- %s seconds ---" % (time.time() - start_time))
-
-b=[]
-
-for e in DP_min :
-    b.append(score_min(e[0],D)[2][1])
-
-plt.hist(b)
-plt.show()
 
 
 
