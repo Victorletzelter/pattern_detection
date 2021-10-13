@@ -81,11 +81,7 @@ Rate_keep=80 #This variable provides quantifies the quality of the ZF intervals 
 
 traitement(zi) #Intervals in the variables GP2_min,DP2_min,GP_min,DP_min,GP2_max,DP2_max,GP_max,DP_max
 
-###Optimal values for N, F and S
-
-###GENERAL CODE !!!!(Values chosen : N=4, F=100 and S=100)
-
-###Value of the thresold factor for the coherence
+###Value of the thresold factor for the Coherence
 
 seuil_min=Coh_opt(DP_min,DP2_min,Rate_keep,N=4,F=100,X1=450000,X2=500000)
 seuil_max=Coh_opt(DP_max,DP2_max,Rate_keep,N=4,F=100,X1=450000,X2=500000)
@@ -108,7 +104,9 @@ Lp=liste_quotient(DP_min,DP2_min)
 Lp2=liste_quotient(DP_max,DP2_max)
 p_opt=min(np.percentile(Lp, 100-Rate_keep),np.percentile(Lp2, 100-Rate_keep))
 
-### Détection of the intervals of Zonal Flows
+### Détection the Zonal Flows intervals 
+
+###The values chosen : N=4, F=100 and S=100  are parameters of the event detection function which were adjusted (See the file R_Opitmisation.py)
 
 def Detect(data,c1='blue',c2='red',NSD=NSD_opt,N=4,F=100,S=100) :
 
@@ -118,12 +116,12 @@ def Detect(data,c1='blue',c2='red',NSD=NSD_opt,N=4,F=100,S=100) :
     #S=100
     #NSD=NSD_opt
 
-    #Detection des minimums locaux
-    indMin, _=find_peaks(-data['Potential(V)']+max(abs(data['Potential(V)'])),height=0)    #indMin : indices des minimums locaux
+    #Detection of local mimimums
+    indMin, _=find_peaks(-data['Potential(V)']+max(abs(data['Potential(V)'])),height=0)    #indMin : indices of the local minimums
 
-    #Détection des maximums locaux
+    #Détection of local maximums
 
-    indMax, _=find_peaks(data['Potential(V)'],height=0)    #indMin : indices des minimums locaux
+    indMax, _=find_peaks(data['Potential(V)'],height=0)    #indMin : indices of the local maximums
 
     #We keep only the peaks where the Corr is >0.8 / we use a confidence interval
 
@@ -210,6 +208,8 @@ def Detect(data,c1='blue',c2='red',NSD=NSD_opt,N=4,F=100,S=100) :
 
     return((Int_min,Int_max))
 
+#Execution of the function
+#  
 I=Detect(D,'blue','red')
 Int_min=I[0]
 Int_max=I[1]
@@ -217,9 +217,9 @@ I2=Detect(D2,'green','orange')
 Int_min2=I2[0]
 Int_max2=I2[1]
 
-###Next step : We keep only the times where the two intervals recover (red/orange or blue/green)
+###Next step : We keep only the times where the two intervals, deduced by D and D2, recover
 
-def indicatrice(Int) :
+def indicatrice(Int) : #This function gives 1 when events occur, and 0 in other cases
 
     ind=[0]*(x2-x1)
     ind=pd.DataFrame(ind)
@@ -242,7 +242,7 @@ ind2_max=indicatrice(Int_max2)
 produit_min=ind_min*ind2_min
 produit_max=ind_max*ind2_max
 
-def filtre(Int,MAX) : #MAX=1 pour max et MAX=-1 pour min
+def filtre(Int,MAX) : #MAX=1 for max et MAX=-1 for min
 
     F_Int=[]
 
@@ -265,6 +265,8 @@ def filtre(Int,MAX) : #MAX=1 pour max et MAX=-1 pour min
             F_Int.append((a,b))
 
     return(F_Int)
+
+#F in a prefix for "Filtered" ; the following lists are the filtered intervals 
 
 F_Int_min=filtre(Int_min,-1)
 F_Int_max=filtre(Int_max,1)
@@ -302,7 +304,7 @@ def filtre_length(Int,Int2,MAX) :
 F_Int_min,F_Int_min2=filtre_length(F_Int_min,F_Int_min2,-1)
 F_Int_max,F_Int_max2=filtre_length(F_Int_max,F_Int_max2,1)
 
-def fill(I_min,I_max,c1='blue',c2='red') :
+def fill(I_min,I_max,c1='blue',c2='red') : #The fill function fills the intervals zones
 
     for i in range (0,len(I_max)) :
         (a,b)=I_max[i][0],I_max[i][1]
@@ -318,14 +320,6 @@ plt.close()
 
 fill(F_Int_min,F_Int_max,'blue','red')
 fill(F_Int_min2,F_Int_max2,'green','orange')
-
-#fill(DP_min,DP_max,'grey','grey')
-#fill(DP2_min,DP2_max,'olive','olive')
-
-Vide=[]
-
-#fill(Confusion,[],'blue','red')
-#fill(Confusion2,[],'green','orange')
 
 plt.grid()
 plt.xlabel('Point Number')
@@ -350,11 +344,11 @@ def histH(DP,c='blue') :
 
     return(H)
 
-H=histH(F_Int_min,'blue')
-#K=histH(DP_min,'red')
+H=histH(F_Int_min,'blue') #Histogram of lengths of the intervals detected by the previous function
+#K=histH(DP_min,'red') #Histogram of lengths of the labelled intervals 
 plt.show()
 
-#Gamma distribution ?
+#The histogram has the shape of a gamma distribution
 def plot_gamma(H) :
 
     alpha=np.mean(H)**2/np.var(H) #4.150404428559912
@@ -404,13 +398,12 @@ def histD(DP,DP2,Numero=1,Rate_keep=90,MAX=-1,S=100) :
 
         plt.hist(Distances2,bins=20,color='red',ec='red',alpha=0.4)
 
-
 histD(DP_min,DP2_min,1)
 histD(DP_min,DP2_min,2)
 plt.show()
 histD(F_Int_min,F_Int_min2,1)
 histD(F_Int_min,F_Int_min2,2)
-plt.show()
+plt.show() #Histogram of distances from the average value (for the detected, and the labelled intervals)
 
 ### Sigma_0 value
 
@@ -428,7 +421,7 @@ sigma0=np.std(D['Potential(V)']) #5.866104253900185
 
 plt.show()
 
-### Value of p :
+### Value of p (parameter of the geometric law for events appearance)
 #Sort DP_min :
 
 def sort(DP) :
@@ -506,33 +499,34 @@ def histC(DP,Numero=1) :
 
     return(C)
 
-A=histA(DP_min,1) #-22.231832043504525
-A2=histA(F_Int_min)
-alphaA,betaA=plot_gamma([-e for e in A2]) #alphaA=6.077479483801698
-#betaA=0.4723282091501369
-#X=np.arange(-50,0,1)
-#Y=[scipy.stats.gamma.pdf(-e,alphaA,0,1/betaA) for e in X]
-#plt.plot(X,Y)
-a=np.median(A) #pour A : -14.790542450583118 pour A2 : -13.570775134998874
-plt.show()
-B=histB(DP_min)
-B2=histB(F_Int_min)
-alphaB,betaB=plot_gamma([-e for e in B2]) #alphaB=8.340017819817685
-#betaB=213.4374537734773
-X=np.arange(-0.1,0.01,0.001)
-Y=[scipy.stats.gamma.pdf(-e,alphaB,0,1/betaB) for e in X]
-plt.plot(X,Y)
-plt.show()
-b=np.median(B) #pour B : -0.046185968401266285 pour B2 :  -0.04122607345704972
-plt.show()
-C=histC(DP_min)
-C2=histC(F_Int_min)
-alphaC,betaC=plot_gamma(C2) #alphaC=1.337078744676507, betaC=0.2583374503229954
-c=np.median(C2) #pour C : 4.219917756500447 pour C2 : 4.33025818557546
-plt.show()
+def Distributions_plots() :
 
+    A=histA(DP_min,1) #-22.231832043504525
+    A2=histA(F_Int_min)
+    alphaA,betaA=plot_gamma([-e for e in A2]) #alphaA=6.077479483801698
+    #betaA=0.4723282091501369
+    #X=np.arange(-50,0,1)
+    #Y=[scipy.stats.gamma.pdf(-e,alphaA,0,1/betaA) for e in X]
+    #plt.plot(X,Y)
+    a=np.median(A) #pour A : -14.790542450583118 pour A2 : -13.570775134998874
+    plt.show()
+    B=histB(DP_min)
+    B2=histB(F_Int_min)
+    alphaB,betaB=plot_gamma([-e for e in B2]) #alphaB=8.340017819817685
+    #betaB=213.4374537734773
+    X=np.arange(-0.1,0.01,0.001)
+    Y=[scipy.stats.gamma.pdf(-e,alphaB,0,1/betaB) for e in X]
+    plt.plot(X,Y)
+    plt.show()
+    b=np.median(B) #pour B : -0.046185968401266285 pour B2 :  -0.04122607345704972
+    plt.show()
+    C=histC(DP_min)
+    C2=histC(F_Int_min)
+    alphaC,betaC=plot_gamma(C2) #alphaC=1.337078744676507, betaC=0.2583374503229954
+    c=np.median(C2) #pour C : 4.219917756500447 pour C2 : 4.33025818557546
+    plt.show()
 
-def plot_gamma(H) :
+def plot_gamma(H) : #Fit of the histogram of H value with a gammma distribution
 
     alpha=np.mean(H)**2/np.var(H) #4.150404428559912
     beta=1/(np.var(H)/np.mean(H)) #0.04294735710638756
@@ -544,7 +538,7 @@ def plot_gamma(H) :
 
     return(alpha,beta)
 
-
+### Performance evaluation
 
 ### Performance of the detection of the same interval :
 
@@ -594,12 +588,12 @@ def filtre2(Int,MAX) : #MAX=1 pour max et MAX=-1 pour min
 
     return(F_Int)
 
-Confusion=filtre2(F_Int_min,-1)
+Confusion=filtre2(F_Int_min,-1) 
 
-Precision=len(Confusion)/len(F_Int_min) #Precision : Env 28% (Idem pour le 2 : Vrais Positifs / (Vrais positifs + Faux positifs) "Proportion de vrais positifs parmis ceux sélectionnés"
-Recall=len(Confusion)/len(DP_min) #Recall : Env 15% (Idem pour le 2 : Vrais Positifs / (Vrais positifs + Faux négatifs) "Proportion de vrais positifs parmis ceux qui sont réellement positifs
+Precision=len(Confusion)/len(F_Int_min) #Precision : ~28% 
+Recall=len(Confusion)/len(DP_min) #Recall : ~15% 
 
-F1_score1=s.harmonic_mean([Precision,Recall])
+F1_score1=s.harmonic_mean([Precision,Recall]) #F_score given the results in the first data
 
 R1=indicatrice(F_Int_min2)
 R2=indicatrice(F_Int_max2)
@@ -609,7 +603,7 @@ L2=indicatrice(DP2_max)
 produit_min1=R1*L1
 produit_max1=R2*L2
 
-def filtre2(Int,MAX) : #MAX=1 pour max et MAX=-1 pour min
+def filtre2(Int,MAX) : #MAX=1 for max and -1 for min 
 
     F_Int=[]
 
@@ -635,256 +629,12 @@ def filtre2(Int,MAX) : #MAX=1 pour max et MAX=-1 pour min
 
 Confusion2=filtre2(F_Int_min2,-1)
 
-Precision2=len(Confusion2)/len(F_Int_min2) #Precision : Env 27.3% (Idem pour le 2 : Vrais Positifs / (Vrais positifs + Faux positifs) "Proportion de vrais positifs parmis ceux sélectionnés"
-Recall2=len(Confusion2)/len(DP2_min) #Recall : Env 15% (Idem pour le 2 : Vrais Positifs / (Vrais positifs + Faux négatifs) "Proportion de vrais positifs parmis ceux qui sont réellement positifs
+Precision2=len(Confusion2)/len(F_Int_min2) #Precision : ~27.3% 
+Recall2=len(Confusion2)/len(DP2_min) #Recall : ~15% 
 
 F1_score2=s.harmonic_mean([Precision2,Recall2])
 
 F1_s=s.mean([F1_score1,F1_score2])
-
-print("--- %s seconds ---" % (time.time() - start_time))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#fill(DP_min,DP_max,c1='blue',c2='red')
-#fill(DP2_min,DP2_max,c1='green',c2='orange')
-
-plt.show()
-
-def indicatrice(Int,x1=X1,x2=X2) :
-
-    ind=[0]*(x2-x1)
-    ind=pd.DataFrame(ind)
-    ind=ind.set_index(np.arange(x1,x2,1))
-
-    for i in range (len(Int)) :
-
-        for l in range (Int[i][0],Int[i][1]) :
-
-            ind[0][l]=1
-
-    return(ind[0])
-
-def bay() :
-    I1_min=indicatrice(F_Int_min,x1,x2)
-    I2_min=indicatrice(F_Int_min2,x1,x2)
-
-    I1_max=indicatrice(F_Int_max,x1,x2)
-    I2_max=indicatrice(F_Int_max2,x1,x2)
-
-    #stock=x2
-    x2=530000
-
-    fichier=open("labelled_dat_min_V1.txt", "w")
-    fichier.write('{}\t{}\t{}\t{}\t{}\n'.format('Point number','Data1','ZF_min_data1','Data2','ZF_min_data2'))
-
-    for i in range (x1,x2) :
-            fichier.write('{}\t{}\t{}\t{}\t{}\n'.format(i,round(D['Potential(V)'][i],2),I1_min[i],round(D2['Potential(V)'][i],3),I2_min[i]))
-
-    fichier=open("labelled_dat_max_V1.txt", "w")
-    fichier.write('{}\t{}\t{}\t{}\t{}\n'.format('Point number','Data1','ZF_min_data1','Data2','ZF_min_data2'))
-
-    for i in range (x1,x2) :
-            fichier.write('{}\t{}\t{}\t{}\t{}\n'.format(i,round(D['Potential(V)'][i],2),I1_max[i],round(D2['Potential(V)'][i],3),I2_max[i]))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##
-
-def bb()
-    S=100
-    data=D2
-    data_m=data.rolling(S).mean()
-    data_rms=np.sqrt(data.pow(2).rolling(S).apply(lambda x: np.sqrt(x.mean())))
-    data_sd=data.rolling(S).std()
-    sup=data_m['Potential(V)']+data_sd['Potential(V)']
-    inf=data_m['Potential(V)']-data_sd['Potential(V)']
-
-    plt.plot(D['Potential(V)'])
-    plt.plot(D2['Potential(V)'])
-    plt.plot(data_m['Potential(V)']+data_sd['Potential(V)'],color='black',linewidth=0.5)
-    plt.plot(data_m['Potential(V)']-data_sd['Potential(V)'],color='black',linewidth=0.5)
-    plt.fill_between(np.arange(450000,500000),data_m['Potential(V)']-data_sd['Potential(V)'] ,data_m['Potential(V)']+data_sd['Potential(V)'], color='blue', alpha=0.2)
-    plt.plot(data_m['Potential(V)'],linestyle='--',color='black',linewidth=0.5)
-    plt.xlabel('Point number')
-    plt.ylabel('Potential(V)')
-    #plt.legend()
-    plt.title('Filtration based on the Bollinger Bands of the signal')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-###OTHER FUNCTIONS
-
-### Aim : enlarge to get the complete ZF intervals
-
-Entree_correcte_min=[0]*len(indMin_6)
-Entree_correcte_max=[0]*len(indMax_6)
-
-def Entree_min(indMin_6) :
-    for i in range (0,len(indMin_6)) :
-
-        e=indMin_6[i]
-
-        if t[e]==1 :
-
-            while t[e]==1 :
-                e=e-1
-
-            Entree_correcte_min[i]=e
-
-        else :
-            Entree_correcte_min[i]=e
-
-    return(Entree_correcte_min)
-
-def Entree_max(indMax_6) :
-    for i in range (0,len(indMax_6)) :
-
-        e=indMax_6[i]
-
-        if t[e]==1 :
-
-            while t[e]==1 :
-                e=e-1
-
-            Entree_correcte_max[i]=e
-
-        else :
-            Entree_correcte_max[i]=e
-
-    return(Entree_correcte_max)
-
-Entree_correcte_min=Entree_min(indMin_6)
-Entree_correcte_max=Entree_max(indMax_6)
-
-Int_max=[]
-
-for i in range (0,len(indMax_6)) :
-    x=indMax_6[i]
-    x_min=Entree_correcte_max[i]
-    y=min(Sorties_max[i],Sorties_max_2[i])
-    Int_max.append((x,x+10*(y+1)))
-    X=np.arange(x_min,x+10*(y+1),1)
-    plt.fill_between(X,-30 ,30, color='blue', alpha=0.1)
-
-Int_min=[]
-
-for i in range (0,len(indMax_6)) :
-    x=indMin_6[i]
-    x_min=Entree_correcte_min[i]
-    y=min(Sorties_min[i],Sorties_min_2[i])
-    Int_min.append((x_min,x+10*(y+1)))
-    X=np.arange(x_min,x+10*(y+1),1)
-    plt.fill_between(X,-30,30, color='red', alpha=0.1)
-
-
-plt.grid()
-plt.title('Damping part of a ZF')
-plt.xlabel('Point Number')
-plt.ylabel('Potential(V)')
-plt.plot(D['Potential(V)'])
-plt.plot(D2['Potential(V)'])
-
-plt.show()
-
-print("--- %s seconds ---" % (time.time() - start_time))
-
-plt.close()
-
-
-def eltc(l1,l2) :
-    N=0
-    for e in l1 :
-        if e in l2 :
-            N+=1
-    return(N)
-
-###Normal law?
-
-#plt.close()
-#hist, bin_edges=np.histogram(D['Potential(V)'],bins=50)
-#plt.plot(hist)
-#plt.show()
-
-#statsmodels.graphics.gofplots.qqplot(D['Potential(V)'])
-
-#plt.show()
 
 
 
