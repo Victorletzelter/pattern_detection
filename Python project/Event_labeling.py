@@ -5,23 +5,18 @@
 #The results of this algorithm will, then, feed a neural network for the detection of the "Zonal Flows" events related to the data
 #of a single probe.
 
+#The detail of each step of the algorithm is provided in the Report "Ciemat__internship-VF.pdf". 
+
 import os #Execution for the python scripts related to the algorithm.
 os.chdir("/Users/victorletzelter/Documents/GitHub") #This line may have to be adapted
 
-exec(open('imports_gestion.py').read())
-exec(open('R_Coherence_gestion.py').read())
-exec(open('LRC_gestion.py').read())
-exec(open('R_Non_coverage.py').read())
-exec(open('R_Exp_gestion.py').read())
+exec(open('Imports.py').read())
+exec(open('Coherence.py').read())
+exec(open('Non_coverage.py').read())
+exec(open('Exp.py').read())
 
 data1=pd.read_csv("/Users/victorletzelter/Desktop/Dat/converted_data1.txt",delimiter=' ')
 data2=pd.read_csv("/Users/victorletzelter/Desktop/Dat/converted_data2.txt",delimiter=' ')
-
-#One can execute the three next lines for a first visualisation of the data 
-
-#plt.plot(data1['Potential(V)'])
-#plt.plot(data2['Potential(V)'])
-#plt.show()
 
 def split(dat,x1,x2) : #This function allows to split the data and to work with a specific part of it : the indexes between x1 and x2.
     l=len(dat)
@@ -30,10 +25,11 @@ def split(dat,x1,x2) : #This function allows to split the data and to work with 
     return(dat1)
 
 x1=450000
-x2=500000
+x2=500000 #bounds of indexes of the data on which the algorithm is applied.
 
 X1=450000
-X2=500000 #bounds used for the "training part" whose usefulness is to adjust hyperparameters of the detection algorithm 
+X2=500000 #bounds used for the "hand-labelling part" whose usefulness is to adjust hyperparameters of the detection algorithm  
+#(See the Hand_labeling.py file)
 
 D=split(data1,x1,x2)
 D2=split(data2,x1,x2)
@@ -81,7 +77,9 @@ Rate_keep=80 #This variable provides quantifies the quality of the ZF intervals 
 
 traitement(zi) #Intervals in the variables GP2_min,DP2_min,GP_min,DP_min,GP2_max,DP2_max,GP_max,DP_max
 
-###Value of the thresold factor for the Coherence
+###Value of the thresold factor for the Coherence 
+#The values N and F are hyperparameters which were adjusted using the Hand_lebeling.py file. Their significance can be found on the .pdf 
+#report of the project (#N adjusts the maximum frequency to be considered , F is the size of the gaussian window for the STFT).
 
 seuil_min=Coh_opt(DP_min,DP2_min,Rate_keep,N=4,F=100,X1=450000,X2=500000)
 seuil_max=Coh_opt(DP_max,DP2_max,Rate_keep,N=4,F=100,X1=450000,X2=500000)
@@ -109,12 +107,6 @@ p_opt=min(np.percentile(Lp, 100-Rate_keep),np.percentile(Lp2, 100-Rate_keep))
 ###The values chosen : N=4, F=100 and S=100  are parameters of the event detection function which were adjusted (See the file R_Opitmisation.py)
 
 def Detect(data,c1='blue',c2='red',NSD=NSD_opt,N=4,F=100,S=100) :
-
-    #data=D
-    #N=4
-    #F=100
-    #S=100
-    #NSD=NSD_opt
 
     #Detection of local mimimums
     indMin, _=find_peaks(-data['Potential(V)']+max(abs(data['Potential(V)'])),height=0)    #indMin : indices of the local minimums
@@ -168,7 +160,7 @@ def Detect(data,c1='blue',c2='red',NSD=NSD_opt,N=4,F=100,S=100) :
         if isok_1(e,-1,t,t_) :
             indMin_3.append(e)
 
-    ### Third filtration based on the non-coverage
+    ###Third filtration based on the non-coverage
 
     indMin_4=copy.deepcopy(indMin_3)
     indMin_4=update(indMin_3,-1,data)
@@ -176,7 +168,7 @@ def Detect(data,c1='blue',c2='red',NSD=NSD_opt,N=4,F=100,S=100) :
 
     ###Fourth filtration based on the exponential decay
 
-    ### Exp with the Data 1
+    ###Exp with the Data 1
     filtre_min=filtre_exp_min(indMin_4,data)
     indMin_5=filtre_min[0]
     Sorties_min=filtre_min[1]
@@ -209,7 +201,7 @@ def Detect(data,c1='blue',c2='red',NSD=NSD_opt,N=4,F=100,S=100) :
     return((Int_min,Int_max))
 
 #Execution of the function
-#  
+ 
 I=Detect(D,'blue','red')
 Int_min=I[0]
 Int_max=I[1]
@@ -217,7 +209,8 @@ I2=Detect(D2,'green','orange')
 Int_min2=I2[0]
 Int_max2=I2[1]
 
-###Next step : We keep only the times where the two intervals, deduced by D and D2, recover
+###Next step : We keep only the times where the two intervals, deduced by D and D2, recover. This filter permits to improve the quality
+#of the detection. 
 
 def indicatrice(Int) : #This function gives 1 when events occur, and 0 in other cases
 
@@ -330,6 +323,10 @@ plt.plot(D2['Potential(V)'])
 plt.show()
 
 ### Histograms and statistics :
+#This part is related to the estimations of the parameters of the probabilitistic model which was designed to generate artificial data
+#whose structure is as close as possible to the real data. The histograms of the values of the parameters in the real data, and the
+#fit with the distribution probabilities deduced by the classical methods (MLE, MM) can be plot executing the following functions. 
+#(See the pdf report and the Data_generator.py file)
 
 ### h value : length of the interval
 
@@ -361,14 +358,12 @@ def plot_gamma(H) :
 
     return(alpha,beta)
 
-alphaH,betaH=plot_gamma(H)
-#400000-525000,86 : alpha : 5.666006367173681, beta : 0.05205518217191368
+alphaH,betaH=plot_gamma(H) #Fit of the histograms with a gamma distribution. 
 
 #First simple estimiation
-h=np.mean(H) #50.425
-#108.84615384615384
+h=np.mean(H) 
 
-### Distance from the average value :
+### Histograms of the distance with the average value
 
 def histD(DP,DP2,Numero=1,Rate_keep=90,MAX=-1,S=100) :
 
@@ -400,7 +395,6 @@ def histD(DP,DP2,Numero=1,Rate_keep=90,MAX=-1,S=100) :
 
 histD(DP_min,DP2_min,1)
 histD(DP_min,DP2_min,2)
-plt.show()
 histD(F_Int_min,F_Int_min2,1)
 histD(F_Int_min,F_Int_min2,2)
 plt.show() #Histogram of distances from the average value (for the detected, and the labelled intervals)
@@ -416,9 +410,7 @@ histS(D2)
 plt.show()
 
 mu=np.mean(D['Potential(V)'])
-sigma0=np.std(D['Potential(V)']) #5.866104253900185
-#sigma0 = 6.009092136913768
-
+sigma0=np.std(D['Potential(V)']) 
 plt.show()
 
 ### Value of p (parameter of the geometric law for events appearance)
@@ -445,9 +437,9 @@ def histP(DP) :
 WT=histP(DP_min)
 plt.show()
 
-p=1/(np.mean(WT)) #0.0008902686785216975
+p=1/(np.mean(WT)) #Value deduced of the parameter p of the geometric law. 
 
-### Values of a and b :
+### Values of a and b : the parameters of the exponential fit t->a*exp(b*(t-0))+c at each event
 
 def histA(DP,Numero=1) :
 
@@ -538,33 +530,25 @@ def plot_gamma(H) : #Fit of the histogram of H value with a gammma distribution
 
     return(alpha,beta)
 
-### Performance evaluation
+### Performance evaluation : the next lines precise a way to evaluate the F_score of the automatic labelling algorithm : the F_Score. 
+#For that purpose, the performance on the algorithm for Event labeling has feed executed on the same window as the Hand labeling algorithm. 
 
 ### Performance of the detection of the same interval :
+def indicatrice(Int,x1,x2) :
 
-def indicatrice(Int) :
+        ind=[0]*(x2-x1)
+        ind=pd.DataFrame(ind)
+        ind=ind.set_index(np.arange(x1,x2,1))
 
-    ind=[0]*(x2-x1)
-    ind=pd.DataFrame(ind)
-    ind=ind.set_index(np.arange(x1,x2,1))
+        for i in range (len(Int)) :
 
-    for i in range (len(Int)) :
+            for l in range (Int[i][0],Int[i][1]) :
 
-        for l in range (Int[i][0],Int[i][1]) :
+                ind[0][l]=1
 
-            ind[0][l]=1
+        return(ind[0])
 
-    return(ind[0])
-
-R1=indicatrice(F_Int_min)
-R2=indicatrice(F_Int_max)
-L1=indicatrice(DP_min)
-L2=indicatrice(DP_max)
-
-produit_min1=R1*L1
-produit_max1=R2*L2
-
-def filtre2(Int,MAX) : #MAX=1 pour max et MAX=-1 pour min
+def filtre2(Int,produit_min,produit_max,MAX) : #MAX=1 pour max et MAX=-1 pour min
 
     F_Int=[]
 
@@ -575,11 +559,11 @@ def filtre2(Int,MAX) : #MAX=1 pour max et MAX=-1 pour min
         for e in range (a,b) :
 
             if MAX==-1 :
-                if produit_min1[e]==1 :
+                if produit_min[e]==1 :
                     keep=1
 
             elif MAX==1 :
-                if produit_max1[e]==1 :
+                if produit_max[e]==1 :
                     keep=1
 
         if keep==1 :
@@ -588,53 +572,41 @@ def filtre2(Int,MAX) : #MAX=1 pour max et MAX=-1 pour min
 
     return(F_Int)
 
-Confusion=filtre2(F_Int_min,-1) 
+def F_score(DP_min,DP2_min,DP_max,,DP2_max,F_Int_min,F_Int_min2,F_Int_max,F_Int_max2,x1,x2) :
 
-Precision=len(Confusion)/len(F_Int_min) #Precision : ~28% 
-Recall=len(Confusion)/len(DP_min) #Recall : ~15% 
+    R1=indicatrice(F_Int_min,x1,x2)
+    R2=indicatrice(F_Int_max,x1,x2)
+    L1=indicatrice(DP_min,x1,x2)
+    L2=indicatrice(DP_max,x1,x2)
 
-F1_score1=s.harmonic_mean([Precision,Recall]) #F_score given the results in the first data
+    produit_min1=R1*L1
+    produit_max1=R2*L2
 
-R1=indicatrice(F_Int_min2)
-R2=indicatrice(F_Int_max2)
-L1=indicatrice(DP2_min)
-L2=indicatrice(DP2_max)
+    Confusion=filtre2(F_Int_min,produit_min1,produit_max1,-1) 
 
-produit_min1=R1*L1
-produit_max1=R2*L2
+    Precision=len(Confusion)/len(F_Int_min) #Precision : ~28% 
+    Recall=len(Confusion)/len(DP_min) #Recall : ~15% 
 
-def filtre2(Int,MAX) : #MAX=1 for max and -1 for min 
+    F1_score1=s.harmonic_mean([Precision,Recall]) #F_score given the results in the first data
 
-    F_Int=[]
+    R1=indicatrice(F_Int_min2)
+    R2=indicatrice(F_Int_max2)
+    L1=indicatrice(DP2_min)
+    L2=indicatrice(DP2_max)
 
-    for (a,b) in Int :
+    produit_min=R1*L1
+    produit_max=R2*L2
 
-        keep=0 #We do not keep
+    Confusion2=filtre2(F_Int_min2,produit_min2,produit_max2,-1)
 
-        for e in range (a,b) :
+    Precision2=len(Confusion2)/len(F_Int_min2) #Precision : ~27.3% 
+    Recall2=len(Confusion2)/len(DP2_min) #Recall : ~15% 
 
-            if MAX==-1 :
-                if produit_min1[e]==1 :
-                    keep=1
+    F1_score2=s.harmonic_mean([Precision2,Recall2])
 
-            elif MAX==1 :
-                if produit_max1[e]==1 :
-                    keep=1
+    F1_s=s.mean([F1_score1,F1_score2])
 
-        if keep==1 :
-
-            F_Int.append((a,b))
-
-    return(F_Int)
-
-Confusion2=filtre2(F_Int_min2,-1)
-
-Precision2=len(Confusion2)/len(F_Int_min2) #Precision : ~27.3% 
-Recall2=len(Confusion2)/len(DP2_min) #Recall : ~15% 
-
-F1_score2=s.harmonic_mean([Precision2,Recall2])
-
-F1_s=s.mean([F1_score1,F1_score2])
+    return(F1_s)
 
 
 

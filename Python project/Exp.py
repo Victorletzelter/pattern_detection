@@ -1,3 +1,5 @@
+#This file provides all the necessary functions for the exponential fit, which will feed the Event_labeling.py algorithm. 
+
 from sklearn.metrics import mean_squared_error
 from math import *
 import warnings
@@ -13,7 +15,7 @@ def func(x,popt) :
     c=popt[2]
     return(a*np.exp(b*x)+c)
 
-# Get the optimal size of the interval :
+# Get the optimal size of the interval for which the fit test will be performed
 def opt(e,MAX,data) :
 #e in the point number of the extremum
 #MAX : 1 if the extremum is a maximum and -1 if it is a minimum
@@ -22,12 +24,17 @@ def opt(e,MAX,data) :
 #This function returns the optimal size of the interval for exponential fitting
 
     Er=0 #While Er=0, there was no warnings
-    a_e=[100]*20
+    #e stands for error here. The value 100 is arbitrary chosen as a high value ; for such values of error , the intervals 
+    #will not be selected.
+    a_e=[100]*20 
     b_e=[100]*20
     c_e=[100]*20
-    l_err=[100]*20
-    RMSE=[100]*20
+    l_err=[100]*20 #l_err stands for the lists of fit errors (~ weighted average of the fit between coefficient errors) associated to each interval's length.  
+    RMSE=[100]*20 
     j=2
+
+    #The corresponding interval chosen will be the one that optimize l_err and the RMSE. 
+    #The Warnings have to be managed here, as the fitting algorithm diverges when the fit is really bad. 
 
     while j<20 and e+10+10*j<len(data['Potential(V)'])+data.index[0] :
         E=0
@@ -70,7 +77,7 @@ def opt(e,MAX,data) :
                 print('Warning was raised as an exception!')
                 Er=1
 
-        if Er==0 :
+        if Er==0 : #If no errors were raised
             a_e[j]=a_er
             b_e[j]=b_er
             c_e[j]=c_er
@@ -93,7 +100,7 @@ def opt(e,MAX,data) :
     min_index = l_err.index(min_value)
 
     if np.max(l_err)!=np.min(l_err) and np.max(RMSE)!=np.min(RMSE) :
-
+    #Criterion to optimize
         mix=0.999*(l_err-np.min(l_err))/(np.max(l_err)-np.min(l_err))+0.001*(RMSE-np.min(RMSE))/(np.max(RMSE)-np.min(RMSE))
 
     else :
@@ -105,7 +112,8 @@ def opt(e,MAX,data) :
 
     return(min_index_3,mix,RMSE)
 
-def filtre_exp_max(indMax_4,data) :
+def filtre_exp_max(indMax_4,data) : #This function filters, among the maximas selected in the previous steps (the indMax_4), those
+#for which the exponential fit is satisfactory.
 
     indMax_5=[]
     Sorties_max=[]
@@ -116,8 +124,6 @@ def filtre_exp_max(indMax_4,data) :
         score=res[0]
         s=res[1]
 
-        #if score[0]<1.5 and score[1]<0.02 and score[1]>0 and score[2]<1.5  :
-        #if score[0]<a_eropt_max and score[1]<b_eropt_max and score[1]>0 and score[2]<c_eropt_max and (abs(coeff[1]+0.05))>epsi and (abs(coeff[1]+1/300)>epsi) :
         if score[0]<a_eropt_max and score[1]<b_eropt_max and score[1]>0 and score[2]<c_eropt_max :
             indMax_5.append(e)
             Sorties_max.append(s)
@@ -126,7 +132,8 @@ def filtre_exp_max(indMax_4,data) :
 
 #Principe :
 
-def filtre_exp_min(indMin_4,data) :
+def filtre_exp_min(indMin_4,data) : #This function filters, among the minimas selected in the previous steps (the indMin_4), those
+#for which the exponential fit is satisfactory.
 
     indMin_5=[]
     Sorties_min=[]
@@ -145,7 +152,9 @@ def filtre_exp_min(indMin_4,data) :
 
     return(indMin_5,Sorties_min)
 
-def score_min(e,data) : #This function provides the error associated with the exponential fit for the point e, when it is a minimum
+def score_min(e,data) : #This function provides the error associated with the exponential fit for the point e, when it is a minimum.
+#The fit is performed in the interval of optimal size selected by the opt function.
+
     E=0 #While E=0, there was no warnings
     min_index,l_err,RMSE=opt(e,-1,data)
     X=np.arange(0,10+10*min_index,1)
@@ -193,7 +202,8 @@ def score_min(e,data) : #This function provides the error associated with the ex
     else :
         return((100,100,100),min_index,popt)
 
-def score_max(e,data) :
+def score_max(e,data) :  #This function provides the error associated with the exponential fit for the point e, when it is a maximum.
+#The fit is performed in the interval of optimal size selected by the opt function.
 
     E=0
     min_index,l_err,RMSE=opt(e,1,data)
@@ -243,8 +253,7 @@ def score_max(e,data) :
     else :
         return((100,100,100),min_index,popt)
 
-def test() :
-
+def test() : #This test function allows to visualise how well is the exponential fit in a given interal of the data
     #RMSE=sqrt(mean_squared_error(Dat, func(X,popt)))
     #print(0.9*(a_er+100*b_er+c_er)/102+0.1*RMSE)
     plt.plot(X,func(X,popt))

@@ -2,8 +2,7 @@ def Correlation(D,D2,R=50) : #D and D2 and the two data frames
  #R in the value of the rolling average for the time correlation calculus
 
 #This function returns the points numbers which are considered to be highly correlated (in the temporal domain) in 'Potential(V)' component of the two data frames D and D2
-
-
+    
     Corr=D['Potential(V)'].rolling(R).corr(D2['Potential(V)'])
 
     #First filtration
