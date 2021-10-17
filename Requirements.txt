@@ -1,0 +1,10 @@
+# Requirements
+tensorflow==2.4.0
+matplotlib==3.2.1
+numpy==1.21.1
+pandas==1.3.0
+scipy==1.6.0 
+stockstats==0.3.2
+nitime==0.9
+eqsig==1.2.10
+statsmodels==0.13.0        
