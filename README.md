@@ -12,8 +12,7 @@ These project has been divided in several parts, which correpond to different py
 4) After that, a neural network was designed. Its parameters were tuned in a random grid to map, the best as possible, the ZF events when the simulated data is given. The final architecture of the network, and the related functions that create inputs and outputs are written in the NN_Model.py file.   
 5) Finally, the scripts to reproduce the plots given in the report are given in the Report_plots.py file. 
 
-![alt text](https://github.com/[Victorletzelter]/[pattern_detection]/blob/[branch]/TJ-II.jpg)
-
+![Stellarator TJ-II](https://upload.wikimedia.org/wikipedia/commons/d/d8/TJ-II_model_including_plasma%2C_coils_and_vacuum_vessel.jpg)
 
 
 
