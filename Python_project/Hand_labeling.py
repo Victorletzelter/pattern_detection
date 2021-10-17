@@ -3,6 +3,10 @@
 #If not, the file exec(open("/Users/victorletzelter/Desktop/Projet_python/samplezi.txt").read()) can be executed first. 
 #The process to adopt for hand-labeling is precised in the learning() function. 
 
+#Loading of the data 
+data1=pd.read_csv("/Users/victorletzelter/Documents/GitHub/pattern_detection/Python project/Data_files/converted_data1.txt",delimiter=' ')
+data2=pd.read_csv("/Users/victorletzelter/Documents/GitHub/pattern_detection/Python project/Data_files/converted_data2.txt",delimiter=' ')
+
 def split(dat,x1,x2) : #This function splits the data frame
     l=len(dat)
     dat1=dat.tail(l-int(x1))
