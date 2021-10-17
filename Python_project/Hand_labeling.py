@@ -13,7 +13,7 @@ def onclick(event): #For a point to be considered, the user will have to double-
     if event.dblclick :
             zi.append((event.xdata,event.ydata))
 
-def learning() : #This function allows to label by hand data, by clicking on the temporal time series. The relevant values are then stored in a variable called 'zi'
+def learning(data1,data2) : #This function allows to label by hand data, by clicking on the temporal time series. The relevant values are then stored in a variable called 'zi'
 #When labelling the data, the user has to proceed, if possible, in the order : for the Data1 : select a point just before the peak, at the 
 #extremum of the peak, and just after the peak.
 #For the Data2 : select proceed in the same way. 
